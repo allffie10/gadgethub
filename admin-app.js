@@ -26,7 +26,7 @@ function toast(msg){
   if(!t){
     t = document.createElement('div');
     t.id = 'gh-toast';
-    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111826;border:1px solid #1E2733;color:#EAF2F5;padding:10px 16px;border-radius:10px;font-size:12px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:88%;text-align:center;';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F1A18;border:1px solid #00FF88;color:#E8F5F1;padding:11px 18px;border-radius:10px;font-size:12px;z-index:9999;box-shadow:0 0 20px rgba(0,255,136,0.3);max-width:88%;text-align:center;';
     document.body.appendChild(t);
   }
   t.innerText = msg;
@@ -40,11 +40,11 @@ async function adminLogin(){
   const pass = document.getElementById('admin-pass').value;
   const err = document.getElementById('login-error');
   err.innerText = '';
-  if(!email || !pass){ err.innerText = 'সব তথ্য দিন'; return; }
+  if(!email || !pass){ err.innerText = 'Enter all fields'; return; }
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e){
-    err.innerText = '❌ ' + (e.code === 'auth/invalid-credential' ? 'ভুল তথ্য' : e.message);
+    err.innerText = '❌ ' + (e.code === 'auth/invalid-credential' ? 'Invalid credentials' : e.message);
   }
 }
 window.adminLogin = adminLogin;
@@ -63,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
       switchTab('dashboard');
     } else {
       await signOut(auth);
-      document.getElementById('login-error').innerText = '❌ আপনি অ্যাডমিন নন';
+      document.getElementById('login-error').innerText = '❌ Not an admin';
     }
   } else {
     document.getElementById('login-screen').classList.remove('hidden-section');
@@ -164,7 +164,7 @@ function renderPayments(){
   const box = document.getElementById('payments-list');
   let list = allPayments;
   if(paymentFilter !== 'all') list = allPayments.filter(p => p.status === paymentFilter);
-  if(list.length === 0){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো পেমেন্ট নেই</p>`; return; }
+  if(list.length === 0){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No payments</p>`; return; }
   const statusMap = { pending:'⏳', approved:'✅', rejected:'❌' };
   const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
   box.innerHTML = list.map(p => `
@@ -181,8 +181,8 @@ function renderPayments(){
       </div>
       ${p.status === 'pending' ? `
         <div class="flex gap-2">
-          <button onclick="approvePayment('${p.id}')" class="flex-1 btn-accent py-2 rounded text-xs">✅ Approve</button>
-          <button onclick="rejectPayment('${p.id}')" class="flex-1 chip py-2 rounded text-xs" style="color:var(--danger)">❌ Reject</button>
+          <button onclick="approvePayment('${p.id}')" class="flex-1 btn-accent py-2 rounded text-xs">✅ APPROVE</button>
+          <button onclick="rejectPayment('${p.id}')" class="flex-1 chip py-2 rounded text-xs" style="color:var(--danger)">❌ REJECT</button>
         </div>` : ''}
     </div>`).join('');
 }
@@ -190,17 +190,19 @@ function renderPayments(){
 async function approvePayment(id){
   const p = allPayments.find(x => x.id === id);
   if(!p) return;
-  if(!confirm(`${p.username}-এর ${fmt(p.amount)} অ্যাপ্রুভ করবেন?`)) return;
+  if(!confirm(`Approve ${fmt(p.amount)} for ${p.username}?`)) return;
   try {
     await updateDoc(doc(db, 'users', p.userId), { balance: increment(p.amount) });
-    await updateDoc(doc(db, 'paymentRequests', id), { status: 'approved', approvedAt: serverTimestamp(), approvedBy: adminUser.uid });
+    await updateDoc(doc(db, 'paymentRequests', id), {
+      status: 'approved', approvedAt: serverTimestamp(), approvedBy: adminUser.uid
+    });
     toast('✅ Approved');
   } catch(e){ toast('❌ ' + e.message); }
 }
 window.approvePayment = approvePayment;
 
 async function rejectPayment(id){
-  if(!confirm('রিজেক্ট করবেন?')) return;
+  if(!confirm('Reject this payment?')) return;
   await updateDoc(doc(db, 'paymentRequests', id), { status: 'rejected', rejectedAt: serverTimestamp() });
   toast('❌ Rejected');
 }
@@ -218,7 +220,7 @@ function renderOrders(){
   const box = document.getElementById('orders-list');
   let list = allOrders;
   if(orderFilter !== 'all') list = allOrders.filter(o => o.status === orderFilter);
-  if(list.length === 0){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো অর্ডার নেই</p>`; return; }
+  if(list.length === 0){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No orders</p>`; return; }
   const statusMap = { pending:'⏳', approved:'✅', rejected:'❌' };
   const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
   box.innerHTML = list.map(o => `
@@ -233,8 +235,8 @@ function renderOrders(){
       </div>
       ${o.status === 'pending' ? `
         <div class="flex gap-2">
-          <button onclick="approveOrder('${o.id}')" class="flex-1 btn-accent py-2 rounded text-xs">✅ Approve</button>
-          <button onclick="rejectOrder('${o.id}')" class="flex-1 chip py-2 rounded text-xs" style="color:var(--danger)">❌ Reject</button>
+          <button onclick="approveOrder('${o.id}')" class="flex-1 btn-accent py-2 rounded text-xs">✅ APPROVE</button>
+          <button onclick="rejectOrder('${o.id}')" class="flex-1 chip py-2 rounded text-xs" style="color:var(--danger)">❌ REJECT</button>
         </div>` : ''}
     </div>`).join('');
 }
@@ -242,12 +244,12 @@ function renderOrders(){
 async function approveOrder(id){
   const o = allOrders.find(x => x.id === id);
   if(!o) return;
-  if(!confirm(`${fmt(o.total)} অ্যাপ্রুভ করবেন? ব্যালেন্স কাটা হবে।`)) return;
+  if(!confirm(`Approve ${fmt(o.total)}? Balance will be deducted.`)) return;
   try {
     const userSnap = await getDoc(doc(db, 'users', o.userId));
-    if(!userSnap.exists()){ toast('❌ ইউজার নেই'); return; }
+    if(!userSnap.exists()){ toast('❌ User not found'); return; }
     const bal = userSnap.data().balance || 0;
-    if(bal < o.total){ toast('❌ পর্যাপ্ত ব্যালেন্স নেই'); return; }
+    if(bal < o.total){ toast('❌ Insufficient balance'); return; }
     await updateDoc(doc(db, 'users', o.userId), { balance: increment(-o.total) });
     await updateDoc(doc(db, 'orders', id), { status:'approved', approvedAt: serverTimestamp() });
     toast('✅ Approved');
@@ -256,11 +258,24 @@ async function approveOrder(id){
 window.approveOrder = approveOrder;
 
 async function rejectOrder(id){
-  if(!confirm('রিজেক্ট করবেন?')) return;
+  if(!confirm('Reject this order?')) return;
   await updateDoc(doc(db, 'orders', id), { status: 'rejected', rejectedAt: serverTimestamp() });
   toast('❌ Rejected');
 }
 window.rejectOrder = rejectOrder;
+
+// Image preview for new product
+document.getElementById('ap-image')?.addEventListener('input', (e) => {
+  const url = e.target.value.trim();
+  const preview = document.getElementById('ap-image-preview');
+  const img = document.getElementById('ap-image-preview-img');
+  if(url){
+    img.src = url;
+    preview.classList.remove('hidden-section');
+  } else {
+    preview.classList.add('hidden-section');
+  }
+});
 
 async function addProduct(){
   const title = document.getElementById('ap-title').value.trim();
@@ -270,38 +285,103 @@ async function addProduct(){
   const image = document.getElementById('ap-image').value.trim();
   const badge = document.getElementById('ap-badge').value;
   const desc = document.getElementById('ap-desc').value.trim();
-  if(!title || !price){ toast('নাম ও দাম দিন'); return; }
-  await addDoc(collection(db, 'products'), { title, price, oldPrice, category, image, badge, desc, createdAt: serverTimestamp() });
+  if(!title || !price){ toast('Name and price required'); return; }
+  await addDoc(collection(db, 'products'), {
+    title, price, oldPrice, category, image, badge, desc,
+    createdAt: serverTimestamp()
+  });
   ['ap-title','ap-price','ap-old-price','ap-category','ap-image','ap-desc'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('ap-badge').value = '';
-  toast('✅ প্রোডাক্ট যোগ হয়েছে');
+  document.getElementById('ap-image-preview').classList.add('hidden-section');
+  toast('✅ Product added');
 }
 window.addProduct = addProduct;
 
 function renderProducts(){
   const box = document.getElementById('products-list');
-  if(!allProducts.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো প্রোডাক্ট নেই</p>`; return; }
+  if(!allProducts.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No products</p>`; return; }
   box.innerHTML = allProducts.map(p => `
     <div class="card p-3 flex items-center gap-3">
-      <img src="${esc(p.image||'')}" class="w-14 h-14 rounded-lg object-cover" style="background:var(--panel-2)" onerror="this.style.opacity=0">
+      <img src="${esc(p.image||'')}" class="w-14 h-14 rounded-lg object-cover" style="background:var(--panel-2)" onerror="this.style.opacity=0.2;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236B8681%22 stroke-width=%221%22><rect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%222%22/><circle cx=%228.5%22 cy=%228.5%22 r=%221.5%22/><path d=%22m21 15-5-5L5 21%22/></svg>'">
       <div class="flex-1 min-w-0">
         <p class="font-bold text-xs truncate">${esc(p.title)}</p>
         <p class="text-[11px]" style="color:var(--accent)">${fmt(p.price)} ${p.badge?`<span class="chip px-1.5 py-0.5 rounded text-[9px]" style="color:var(--amber)">${esc(p.badge)}</span>`:''}</p>
       </div>
-      <button onclick="deleteProduct('${p.id}')" class="chip px-2 py-1.5 rounded text-xs" style="color:var(--danger)">মুছুন</button>
+      <div class="flex gap-1">
+        <button onclick="openEditModal('${p.id}')" class="chip px-2.5 py-1.5 rounded text-xs" style="color:var(--accent)">✏️</button>
+        <button onclick="deleteProduct('${p.id}')" class="chip px-2.5 py-1.5 rounded text-xs" style="color:var(--danger)">🗑️</button>
+      </div>
     </div>`).join('');
 }
 
 async function deleteProduct(id){
-  if(!confirm('মুছবেন?')) return;
+  if(!confirm('Delete this product?')) return;
   await deleteDoc(doc(db, 'products', id));
-  toast('✅ মুছে ফেলা হয়েছে');
+  toast('✅ Deleted');
 }
 window.deleteProduct = deleteProduct;
 
+// EDIT MODAL
+function openEditModal(id){
+  const p = allProducts.find(x => x.id === id);
+  if(!p) return;
+  document.getElementById('edit-id').value = p.id;
+  document.getElementById('edit-title').value = p.title || '';
+  document.getElementById('edit-price').value = p.price || '';
+  document.getElementById('edit-old-price').value = p.oldPrice || '';
+  document.getElementById('edit-category').value = p.category || '';
+  document.getElementById('edit-image').value = p.image || '';
+  document.getElementById('edit-badge').value = p.badge || '';
+  document.getElementById('edit-desc').value = p.desc || '';
+  previewEditImage();
+  document.getElementById('edit-modal').classList.remove('hidden');
+  document.getElementById('edit-modal').classList.add('flex');
+}
+window.openEditModal = openEditModal;
+
+function closeEditModal(){
+  document.getElementById('edit-modal').classList.add('hidden');
+  document.getElementById('edit-modal').classList.remove('flex');
+}
+window.closeEditModal = closeEditModal;
+
+function previewEditImage(){
+  const url = document.getElementById('edit-image').value.trim();
+  const preview = document.getElementById('edit-image-preview');
+  const img = document.getElementById('edit-image-preview-img');
+  if(url){
+    img.src = url;
+    preview.classList.remove('hidden-section');
+  } else {
+    preview.classList.add('hidden-section');
+  }
+}
+window.previewEditImage = previewEditImage;
+
+async function saveProduct(){
+  const id = document.getElementById('edit-id').value;
+  const title = document.getElementById('edit-title').value.trim();
+  const price = parseInt(document.getElementById('edit-price').value);
+  const oldPrice = parseInt(document.getElementById('edit-old-price').value) || 0;
+  const category = document.getElementById('edit-category').value.trim();
+  const image = document.getElementById('edit-image').value.trim();
+  const badge = document.getElementById('edit-badge').value;
+  const desc = document.getElementById('edit-desc').value.trim();
+  if(!title || !price){ toast('Name and price required'); return; }
+  try {
+    await updateDoc(doc(db, 'products', id), {
+      title, price, oldPrice, category, image, badge, desc,
+      updatedAt: serverTimestamp()
+    });
+    closeEditModal();
+    toast('✅ Product updated');
+  } catch(e){ toast('❌ ' + e.message); }
+}
+window.saveProduct = saveProduct;
+
 function renderUsers(){
   const box = document.getElementById('users-list');
-  if(!allUsers.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো ইউজার নেই</p>`; return; }
+  if(!allUsers.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No users</p>`; return; }
   box.innerHTML = allUsers.map(u => `
     <div class="card p-3 flex justify-between items-center">
       <div>
@@ -316,12 +396,12 @@ function renderUsers(){
 }
 
 async function adjustBalance(uid, uname){
-  const amtStr = prompt(`${uname}-এর ব্যালেন্স কত যোগ/বিয়োগ করবেন?`);
+  const amtStr = prompt(`Adjust ${uname}'s balance by how much? (negative to deduct)`);
   if(!amtStr) return;
   const amt = parseInt(amtStr);
-  if(isNaN(amt)){ toast('ভুল সংখ্যা'); return; }
+  if(isNaN(amt)){ toast('Invalid number'); return; }
   await updateDoc(doc(db, 'users', uid), { balance: increment(amt) });
-  toast('✅ আপডেট হয়েছে');
+  toast('✅ Updated');
 }
 window.adjustBalance = adjustBalance;
 
@@ -330,18 +410,18 @@ async function addPaymentNumber(){
   const number = document.getElementById('pn-number').value.trim();
   const name = document.getElementById('pn-name').value.trim();
   const personal = document.getElementById('pn-personal').checked;
-  if(!number){ toast('নাম্বার দিন'); return; }
+  if(!number){ toast('Number required'); return; }
   await addDoc(collection(db, 'paymentNumbers'), { type, number, name, personal, createdAt: serverTimestamp() });
   document.getElementById('pn-number').value = '';
   document.getElementById('pn-name').value = '';
   document.getElementById('pn-personal').checked = false;
-  toast('✅ নাম্বার যোগ হয়েছে');
+  toast('✅ Number added');
 }
 window.addPaymentNumber = addPaymentNumber;
 
 function renderPaymentNumbers(){
   const box = document.getElementById('payment-numbers-list');
-  if(!allPaymentNumbers.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো নাম্বার নেই</p>`; return; }
+  if(!allPaymentNumbers.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No numbers</p>`; return; }
   box.innerHTML = allPaymentNumbers.map(n => `
     <div class="card p-3 flex justify-between items-center">
       <div>
@@ -349,14 +429,14 @@ function renderPaymentNumbers(){
         <p class="text-sm">${esc(n.number)}</p>
         <p class="text-[10px]" style="color:var(--muted)">${esc(n.name||'')} ${n.personal?'(Personal)':'(Agent)'}</p>
       </div>
-      <button onclick="deletePaymentNumber('${n.id}')" class="chip px-2 py-1.5 rounded text-xs" style="color:var(--danger)">মুছুন</button>
+      <button onclick="deletePaymentNumber('${n.id}')" class="chip px-2 py-1.5 rounded text-xs" style="color:var(--danger)">Delete</button>
     </div>`).join('');
 }
 
 async function deletePaymentNumber(id){
-  if(!confirm('মুছবেন?')) return;
+  if(!confirm('Delete?')) return;
   await deleteDoc(doc(db, 'paymentNumbers', id));
-  toast('✅ মুছে ফেলা হয়েছে');
+  toast('✅ Deleted');
 }
 window.deletePaymentNumber = deletePaymentNumber;
 
@@ -364,42 +444,42 @@ async function addGiftCode(){
   const code = document.getElementById('gc-code').value.trim().toUpperCase();
   const amount = parseInt(document.getElementById('gc-amount').value);
   const maxUses = parseInt(document.getElementById('gc-max').value) || 1;
-  if(!code || !amount){ toast('কোড ও amount দিন'); return; }
+  if(!code || !amount){ toast('Code and amount required'); return; }
   await addDoc(collection(db, 'giftCodes'), { code, amount, maxUses, usedBy: [], createdAt: serverTimestamp() });
   document.getElementById('gc-code').value = '';
   document.getElementById('gc-amount').value = '';
-  toast('✅ গিফট কোড তৈরি');
+  toast('✅ Gift code created');
 }
 window.addGiftCode = addGiftCode;
 
 function renderGifts(){
   const box = document.getElementById('gifts-list');
-  if(!allGifts.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো কোড নেই</p>`; return; }
+  if(!allGifts.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No codes</p>`; return; }
   box.innerHTML = allGifts.map(g => `
     <div class="card p-3 flex justify-between items-center">
       <div>
         <p class="font-bold text-xs" style="color:var(--accent)">${esc(g.code)}</p>
         <p class="text-[11px]">${fmt(g.amount)} · Used: ${(g.usedBy||[]).length}/${g.maxUses||1}</p>
       </div>
-      <button onclick="deleteGift('${g.id}')" class="chip px-2 py-1.5 rounded text-xs" style="color:var(--danger)">মুছুন</button>
+      <button onclick="deleteGift('${g.id}')" class="chip px-2 py-1.5 rounded text-xs" style="color:var(--danger)">Delete</button>
     </div>`).join('');
 }
 
 async function deleteGift(id){
-  if(!confirm('মুছবেন?')) return;
+  if(!confirm('Delete?')) return;
   await deleteDoc(doc(db, 'giftCodes', id));
-  toast('✅ মুছে ফেলা হয়েছে');
+  toast('✅ Deleted');
 }
 window.deleteGift = deleteGift;
 
 async function addCategory(){
   const cat = document.getElementById('new-category').value.trim();
-  if(!cat){ toast('ক্যাটাগরি দিন'); return; }
+  if(!cat){ toast('Category required'); return; }
   const cats = settings.categories || [];
-  if(cats.includes(cat)){ toast('আগেই আছে'); return; }
+  if(cats.includes(cat)){ toast('Already exists'); return; }
   await setDoc(doc(db, 'settings', 'general'), { ...settings, categories: [...cats, cat] }, { merge: true });
   document.getElementById('new-category').value = '';
-  toast('✅ যোগ হয়েছে');
+  toast('✅ Added');
 }
 window.addCategory = addCategory;
 
@@ -416,13 +496,13 @@ function renderCategories(){
 async function removeCategory(cat){
   const cats = (settings.categories || []).filter(c => c !== cat);
   await setDoc(doc(db, 'settings', 'general'), { ...settings, categories: cats }, { merge: true });
-  toast('✅ মুছে ফেলা হয়েছে');
+  toast('✅ Deleted');
 }
 window.removeCategory = removeCategory;
 
 function renderRequests(){
   const box = document.getElementById('requests-list');
-  if(!allRequests.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">কোনো রিকোয়েস্ট নেই</p>`; return; }
+  if(!allRequests.length){ box.innerHTML = `<p class="text-center py-6 text-xs" style="color:var(--muted)">No requests</p>`; return; }
   box.innerHTML = allRequests.map(r => `
     <div class="card p-3">
       <p class="font-bold text-xs" style="color:var(--accent)">${esc(r.title)}</p>
