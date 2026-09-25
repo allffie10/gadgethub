@@ -19,6 +19,7 @@ let myPayments = [];
 let currentProduct = {};
 let authMode = 'login';
 let selectedCategory = '';
+let lastSpinAt = 0;
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = (n) => '৳' + Number(n || 0).toLocaleString('bn-BD');
@@ -29,7 +30,7 @@ function toast(msg){
   if(!t){
     t = document.createElement('div');
     t.id = 'gh-toast';
-    t.style.cssText = 'position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#111826;border:1px solid #1E2733;color:#EAF2F5;padding:10px 16px;border-radius:10px;font-size:12px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:88%;text-align:center;transition:opacity .2s;';
+    t.style.cssText = 'position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0F1A18;border:1px solid #00FF88;color:#E8F5F1;padding:11px 18px;border-radius:10px;font-size:12px;z-index:60;box-shadow:0 0 20px rgba(0,255,136,0.3);max-width:88%;text-align:center;transition:opacity .2s;';
     document.body.appendChild(t);
   }
   t.innerText = msg;
@@ -49,6 +50,7 @@ function go(section){
   if(section === 'wishlist') renderWishlist();
   if(section === 'leaderboard') renderLeaderboard();
   if(section === 'add-balance') renderPaymentNumbers();
+  if(section === 'referral') renderReferral();
   window.scrollTo(0,0);
 }
 window.go = go;
@@ -76,9 +78,9 @@ function setAuthMode(m){
   document.getElementById('auth-username').classList.toggle('hidden', !showSignup);
   document.getElementById('auth-phone').classList.toggle('hidden', !showSignup);
   document.getElementById('tab-login').style.background = !showSignup ? 'var(--accent)' : 'transparent';
-  document.getElementById('tab-login').style.color = !showSignup ? '#062622' : 'var(--text)';
+  document.getElementById('tab-login').style.color = !showSignup ? '#062A1A' : 'var(--text)';
   document.getElementById('tab-signup').style.background = showSignup ? 'var(--accent)' : 'transparent';
-  document.getElementById('tab-signup').style.color = showSignup ? '#062622' : 'var(--text)';
+  document.getElementById('tab-signup').style.color = showSignup ? '#062A1A' : 'var(--text)';
 }
 window.setAuthMode = setAuthMode;
 
@@ -88,30 +90,30 @@ async function handleAuthSubmit(){
   const email = document.getElementById('auth-email').value.trim();
   const pass = document.getElementById('auth-pass').value;
 
-  if(!email || !pass){ toast('ইমেইল ও পাসওয়ার্ড দিন'); return; }
-  if(pass.length < 6){ toast('পাসওয়ার্ড ৬+ ক্যারেক্টার হতে হবে'); return; }
+  if(!email || !pass){ toast('Email and password required'); return; }
+  if(pass.length < 6){ toast('Password must be 6+ characters'); return; }
 
   try {
     if(authMode === 'signup'){
-      if(!username || !phone){ toast('সব তথ্য দিন'); return; }
+      if(!username || !phone){ toast('All fields required'); return; }
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
       await setDoc(doc(db, 'users', cred.user.uid), {
         username, email, phone, balance: 0, role: 'user', createdAt: serverTimestamp()
       });
-      toast('✅ একাউন্ট তৈরি হয়েছে');
+      toast('✅ Account created');
     } else {
       await signInWithEmailAndPassword(auth, email, pass);
-      toast('✅ লগইন সফল');
+      toast('✅ Login successful');
     }
     closeAuth();
   } catch(err){
     const msg = {
-      'auth/email-already-in-use': 'এই ইমেইল আগেই ব্যবহার হয়েছে',
-      'auth/invalid-email': 'সঠিক ইমেইল দিন',
-      'auth/weak-password': 'পাসওয়ার্ড দুর্বল',
-      'auth/user-not-found': 'এই ইমেইলে একাউন্ট নেই',
-      'auth/wrong-password': 'ভুল পাসওয়ার্ড',
-      'auth/invalid-credential': 'ভুল ইমেইল বা পাসওয়ার্ড'
+      'auth/email-already-in-use': 'Email already registered',
+      'auth/invalid-email': 'Invalid email',
+      'auth/weak-password': 'Weak password',
+      'auth/user-not-found': 'Account not found',
+      'auth/wrong-password': 'Wrong password',
+      'auth/invalid-credential': 'Invalid credentials'
     }[err.code] || err.message;
     toast('❌ ' + msg);
   }
@@ -120,17 +122,17 @@ window.handleAuthSubmit = handleAuthSubmit;
 
 async function handleForgotPassword(){
   const email = document.getElementById('auth-email').value.trim();
-  if(!email){ toast('আগে ইমেইল লিখুন'); return; }
+  if(!email){ toast('Enter email first'); return; }
   try {
     await sendPasswordResetEmail(auth, email);
-    toast('✅ রিসেট লিংক পাঠানো হয়েছে');
+    toast('✅ Reset link sent');
   } catch(err){ toast('❌ ' + err.message); }
 }
 window.handleForgotPassword = handleForgotPassword;
 
 async function doLogout(){
   await signOut(auth);
-  toast('লগআউট হয়েছে');
+  toast('Logged out');
   go('home');
 }
 window.doLogout = doLogout;
@@ -145,13 +147,13 @@ onAuthStateChanged(auth, async (user) => {
         if(s.exists()){ userProfile = s.data(); updateBalanceUI(); }
       });
     }
-    document.getElementById('nav-auth-btn').innerText = 'প্রোফাইল';
+    document.getElementById('nav-auth-btn').innerText = 'PROFILE';
     document.getElementById('nav-auth-btn').onclick = () => go('profile');
     updateBalanceUI();
     loadCart(); loadWishlist(); loadMyOrders(); loadMyPayments();
   } else {
     currentUser = null; userProfile = null;
-    document.getElementById('nav-auth-btn').innerText = 'লগইন';
+    document.getElementById('nav-auth-btn').innerText = 'LOGIN';
     document.getElementById('nav-auth-btn').onclick = () => openAuth('login');
     updateBalanceUI();
     cart = []; wishlist = []; myOrders = []; myPayments = [];
@@ -183,7 +185,7 @@ onSnapshot(doc(db, 'settings', 'general'), (snap) => {
 function renderCategories(){
   const bar = document.getElementById('categories-bar');
   if(!categories.length){ bar.innerHTML = ''; return; }
-  bar.innerHTML = `<button onclick="filterByCategory('')" class="chip px-3 py-1.5 rounded-full text-xs whitespace-nowrap" style="color:var(--accent)">সব</button>` +
+  bar.innerHTML = `<button onclick="filterByCategory('')" class="chip px-3 py-1.5 rounded-full text-xs whitespace-nowrap" style="color:var(--accent);border-color:var(--accent)">সব</button>` +
     categories.map(c => `<button onclick="filterByCategory('${esc(c)}')" class="chip px-3 py-1.5 rounded-full text-xs whitespace-nowrap">${esc(c)}</button>`).join('');
 }
 
@@ -197,24 +199,26 @@ function renderProducts(){
   if(selectedCategory) filtered = filtered.filter(p => p.category === selectedCategory);
   document.getElementById('product-count').innerText = filtered.length + ' টি';
   if(filtered.length === 0){
-    grid.innerHTML = `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">কোনো প্রোডাক্ট নেই।</div>`;
+    grid.innerHTML = `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">কোনো প্রোডাক্ট নেই</div>`;
     return;
   }
   grid.innerHTML = filtered.map(p => productCard(p)).join('');
 }
 
 function productCard(p){
-  const badgeColor = p.badge === 'HOT' ? '#FF5C6A' : p.badge === 'NEW' ? '#3B82F6' : '#00E5C7';
-  const badgeHtml = p.badge ? `<span class="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded text-white" style="background:${badgeColor}">${esc(p.badge)}</span>` : '';
+  const badgeColor = p.badge === 'HOT' ? '#FF5C6A' : p.badge === 'NEW' ? '#3B82F6' : '#00FF88';
+  const badgeHtml = p.badge ? `<span class="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded text-white z-10" style="background:${badgeColor}">${esc(p.badge)}</span>` : '';
   const oldPriceHtml = p.oldPrice ? `<span class="text-[11px] line-through" style="color:var(--muted)">৳${p.oldPrice}</span>` : '';
   const isWished = wishlist.includes(p.id);
+  const imgUrl = p.image || '';
   return `
     <div class="card p-3 relative flex flex-col justify-between fade-in">
       ${badgeHtml}
-      <button onclick='event.stopPropagation();toggleWishlist(${JSON.stringify(p.id)})' class="absolute top-2 right-2 text-base ${isWished?'heart-active':''}" style="color:var(--muted)">${isWished?'❤️':'🤍'}</button>
+      <button onclick='event.stopPropagation();toggleWishlist(${JSON.stringify(p.id)})' class="absolute top-2 right-2 text-base z-10 ${isWished?'heart-active':''}" style="color:var(--muted)">${isWished?'❤️':'🤍'}</button>
       <div>
-        <div class="h-28 rounded-lg overflow-hidden mb-2" style="background:var(--panel-2)">
-          <img src="${esc(p.image||'')}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        <div class="h-32 rounded-lg overflow-hidden mb-2 relative" style="background:var(--panel-2)">
+          <img src="${esc(imgUrl)}" class="w-full h-full object-cover" loading="lazy"
+            onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:#6B8681;font-size:40px\\'>📦</div>'">
         </div>
         <h3 class="font-bold text-xs mb-1 leading-snug">${esc(p.title)}</h3>
         <div class="flex items-center gap-2 mb-3">
@@ -252,13 +256,13 @@ function loadCart(){
 }
 
 async function addToCart(productId){
-  if(!currentUser){ toast('কার্টে যোগ করতে লগইন করুন'); openAuth('login'); return; }
+  if(!currentUser){ toast('Login to add to cart'); openAuth('login'); return; }
   const p = products.find(x => x.id === productId);
   if(!p) return;
   await setDoc(doc(db, 'carts', currentUser.uid, 'items', productId), {
     productId, title: p.title, price: p.price, image: p.image || '', qty: 1
   });
-  toast('✅ কার্টে যোগ হয়েছে');
+  toast('✅ Added to cart');
 }
 window.addToCart = addToCart;
 
@@ -275,7 +279,7 @@ function renderCart(){
   document.getElementById('cart-badge').innerText = cart.length;
   const box = document.getElementById('cart-items-container');
   if(cart.length === 0){
-    box.innerHTML = `<p class="text-center mt-10" style="color:var(--muted)">কার্ট খালি</p>`;
+    box.innerHTML = `<p class="text-center mt-10" style="color:var(--muted)">Cart is empty</p>`;
     document.getElementById('cart-total-price').innerText = '৳0';
     return;
   }
@@ -296,11 +300,11 @@ window.openCart = openCart;
 window.closeCart = closeCart;
 
 async function checkoutCart(){
-  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  if(!currentUser){ toast('Login required'); openAuth('login'); return; }
   if(cart.length === 0) return;
   const total = cart.reduce((s,i)=>s+i.price*(i.qty||1), 0);
   const bal = userProfile?.balance || 0;
-  if(bal < total){ toast('❌ পর্যাপ্ত ব্যালেন্স নেই'); closeCart(); go('add-balance'); return; }
+  if(bal < total){ toast('❌ Insufficient balance'); closeCart(); go('add-balance'); return; }
   await addDoc(collection(db, 'orders'), {
     userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
     items: cart.map(i => ({ productId: i.productId, title: i.title, price: i.price, qty: i.qty||1 })),
@@ -310,21 +314,21 @@ async function checkoutCart(){
     await deleteDoc(doc(db, 'carts', currentUser.uid, 'items', item.id));
   }
   closeCart();
-  toast('✅ অর্ডার প্লেসড!');
+  toast('✅ Order placed!');
   go('my-orders');
 }
 window.checkoutCart = checkoutCart;
 
 async function executeBuy(){
-  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  if(!currentUser){ toast('Login required'); openAuth('login'); return; }
   const bal = userProfile?.balance || 0;
-  if(bal < currentProduct.price){ toast('❌ পর্যাপ্ত ব্যালেন্স নেই'); go('add-balance'); return; }
+  if(bal < currentProduct.price){ toast('❌ Insufficient balance'); go('add-balance'); return; }
   await addDoc(collection(db, 'orders'), {
     userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
     items: [{ productId: currentProduct.id, title: currentProduct.title, price: currentProduct.price, qty: 1 }],
     total: currentProduct.price, status: 'pending', createdAt: serverTimestamp()
   });
-  toast('✅ অর্ডার প্লেসড!');
+  toast('✅ Order placed!');
   go('my-orders');
 }
 window.executeBuy = executeBuy;
@@ -338,11 +342,11 @@ function loadWishlist(){
 }
 
 async function toggleWishlist(productId){
-  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  if(!currentUser){ toast('Login required'); openAuth('login'); return; }
   const ref = doc(db, 'wishlists', currentUser.uid, 'items', productId);
   const snap = await getDoc(ref);
-  if(snap.exists()){ await deleteDoc(ref); toast('উইশলিস্ট থেকে সরানো'); }
-  else { await setDoc(ref, { productId, addedAt: serverTimestamp() }); toast('উইশলিস্টে যোগ'); }
+  if(snap.exists()){ await deleteDoc(ref); toast('Removed from wishlist'); }
+  else { await setDoc(ref, { productId, addedAt: serverTimestamp() }); toast('Added to wishlist'); }
 }
 window.toggleWishlist = toggleWishlist;
 
@@ -353,13 +357,13 @@ function renderWishlist(){
   const grid = document.getElementById('wishlist-grid');
   const items = products.filter(p => wishlist.includes(p.id));
   grid.innerHTML = items.length ? items.map(p => productCard(p)).join('') :
-    `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">উইশলিস্ট খালি</div>`;
+    `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">Wishlist empty</div>`;
 }
 
 function renderPaymentNumbers(){
   const box = document.getElementById('payment-numbers-list');
   if(!paymentNumbers.length){
-    box.innerHTML = `<p class="text-center text-xs py-4" style="color:var(--muted)">এখনো কোনো নাম্বার যোগ করা হয়নি</p>`;
+    box.innerHTML = `<p class="text-center text-xs py-4" style="color:var(--muted)">No payment numbers added yet</p>`;
     return;
   }
   const colors = { bKash:'#E2136E', Nagad:'#F7941D', Rocket:'#8C52FF' };
@@ -375,18 +379,18 @@ function renderPaymentNumbers(){
 }
 
 function copyText(t){
-  navigator.clipboard?.writeText(t).then(()=>toast('কপি হয়েছে')).catch(()=>toast('কপি ব্যর্থ'));
+  navigator.clipboard?.writeText(t).then(()=>toast('Copied')).catch(()=>toast('Copy failed'));
 }
 window.copyText = copyText;
 
 async function submitPaymentRequest(){
-  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  if(!currentUser){ toast('Login required'); openAuth('login'); return; }
   const amount = parseInt(document.getElementById('topup-amount').value);
   const trxId = document.getElementById('trx-id').value.trim();
   const senderNumber = document.getElementById('sender-number').value.trim();
-  if(!amount || amount <= 0){ toast('সঠিক পরিমাণ দিন'); return; }
-  if(!trxId || trxId.length < 4){ toast('সঠিক TrxID দিন'); return; }
-  if(!senderNumber || senderNumber.length < 11){ toast('সঠিক sender নাম্বার দিন'); return; }
+  if(!amount || amount <= 0){ toast('Enter valid amount'); return; }
+  if(!trxId || trxId.length < 4){ toast('Enter valid TrxID'); return; }
+  if(!senderNumber || senderNumber.length < 11){ toast('Enter valid sender number'); return; }
   await addDoc(collection(db, 'paymentRequests'), {
     userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
     amount, trxId, senderNumber, status: 'pending', createdAt: serverTimestamp()
@@ -394,7 +398,7 @@ async function submitPaymentRequest(){
   document.getElementById('topup-amount').value = '';
   document.getElementById('trx-id').value = '';
   document.getElementById('sender-number').value = '';
-  toast('✅ রিকোয়েস্ট পাঠানো হয়েছে');
+  toast('✅ Request sent');
   go('my-payments');
 }
 window.submitPaymentRequest = submitPaymentRequest;
@@ -412,8 +416,8 @@ function loadMyPayments(){
 function renderMyPayments(){
   const box = document.getElementById('my-payments-list');
   if(!box) return;
-  if(myPayments.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">কোনো পেমেন্ট নেই</p>`; return; }
-  const statusMap = { pending:'⏳ পেন্ডিং', approved:'✅ অ্যাপ্রুভড', rejected:'❌ রিজেক্টেড' };
+  if(myPayments.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">No payment requests</p>`; return; }
+  const statusMap = { pending:'⏳ PENDING', approved:'✅ APPROVED', rejected:'❌ REJECTED' };
   const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
   box.innerHTML = myPayments.map(p => `
     <div class="chip p-3 rounded">
@@ -438,8 +442,8 @@ function loadMyOrders(){
 function renderMyOrders(){
   const box = document.getElementById('orders-list');
   if(!box) return;
-  if(myOrders.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">কোনো অর্ডার নেই</p>`; return; }
-  const statusMap = { pending:'⏳ পেন্ডিং', approved:'✅ সম্পন্ন', rejected:'❌ বাতিল' };
+  if(myOrders.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">No orders</p>`; return; }
+  const statusMap = { pending:'⏳ PENDING', approved:'✅ COMPLETED', rejected:'❌ CANCELLED' };
   const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
   box.innerHTML = myOrders.map(o => `
     <div class="chip p-3 rounded">
@@ -453,8 +457,9 @@ function renderMyOrders(){
 }
 
 function renderProfile(){
-  document.getElementById('profile-name').innerText = userProfile?.username || 'গেস্ট';
+  document.getElementById('profile-name').innerText = userProfile?.username?.toUpperCase() || 'GUEST';
   document.getElementById('profile-email').innerText = currentUser?.email || '';
+  document.getElementById('profile-phone').innerText = userProfile?.phone ? '📱 ' + userProfile.phone : '';
   document.getElementById('profile-balance').innerText = userProfile?.balance || 0;
 }
 
@@ -473,42 +478,72 @@ function renderLeaderboard(){
           <span class="font-bold">${esc(name)}</span>
         </div>
         <span style="color:var(--accent)">${fmt(total)}</span>
-      </div>`).join('') : `<p class="text-center py-6" style="color:var(--muted)">এখনো কোনো অ্যাপ্রুভড অর্ডার নেই</p>`;
+      </div>`).join('') : `<p class="text-center py-6" style="color:var(--muted)">No approved orders yet</p>`;
   });
 }
 
+function renderReferral(){
+  if(!currentUser){ document.getElementById('referral-code').innerText = 'Login first'; return; }
+  const code = 'GH-' + userProfile.username.toUpperCase().slice(0,6) + '-' + currentUser.uid.slice(0,4).toUpperCase();
+  document.getElementById('referral-code').innerText = code;
+}
+
+function copyReferral(){
+  const code = document.getElementById('referral-code').innerText;
+  if(code === '—' || code === 'Login first'){ toast('Login first'); return; }
+  navigator.clipboard?.writeText(code).then(()=>toast('Referral code copied'));
+}
+window.copyReferral = copyReferral;
+
 async function redeemGiftCode(){
-  if(!currentUser){ toast('লগইন করুন'); return; }
+  if(!currentUser){ toast('Login required'); return; }
   const code = document.getElementById('giftcode-input').value.trim().toUpperCase();
-  if(!code){ toast('কোড দিন'); return; }
+  if(!code){ toast('Enter code'); return; }
   const q = query(collection(db, 'giftCodes'), where('code', '==', code));
   const snap = await getDocs(q);
-  if(snap.empty){ toast('❌ অবৈধ কোড'); return; }
+  if(snap.empty){ toast('❌ Invalid code'); return; }
   const codeDoc = snap.docs[0];
   const data = codeDoc.data();
   const usedBy = data.usedBy || [];
-  if(usedBy.includes(currentUser.uid)){ toast('❌ আপনি এই কোড আগেই ব্যবহার করেছেন'); return; }
-  if(data.maxUses && usedBy.length >= data.maxUses){ toast('❌ কোডের limit শেষ'); return; }
+  if(usedBy.includes(currentUser.uid)){ toast('❌ Already used'); return; }
+  if(data.maxUses && usedBy.length >= data.maxUses){ toast('❌ Limit reached'); return; }
   await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(data.amount) });
   await updateDoc(doc(db, 'giftCodes', codeDoc.id), { usedBy: arrayUnion(currentUser.uid) });
-  toast('✅ ' + fmt(data.amount) + ' বোনাস যোগ হয়েছে!');
+  toast('✅ ' + fmt(data.amount) + ' bonus added!');
   document.getElementById('giftcode-input').value = '';
 }
 window.redeemGiftCode = redeemGiftCode;
 
 async function submitRequest(){
-  if(!currentUser){ toast('লগইন করুন'); return; }
+  if(!currentUser){ toast('Login required'); return; }
   const title = document.getElementById('req-title').value.trim();
   const details = document.getElementById('req-details').value.trim();
-  if(!title){ toast('নাম দিন'); return; }
+  if(!title){ toast('Enter product name'); return; }
   await addDoc(collection(db, 'customRequests'), {
     userId: currentUser.uid, username: userProfile.username,
     title, details, status: 'pending', createdAt: serverTimestamp()
   });
   document.getElementById('req-title').value = '';
   document.getElementById('req-details').value = '';
-  toast('✅ রিকোয়েস্ট পাঠানো হয়েছে');
+  toast('✅ Request sent');
 }
 window.submitRequest = submitRequest;
+
+async function spinWheel(){
+  if(!currentUser){ toast('Login required'); return; }
+  const now = Date.now();
+  if(now - lastSpinAt < 86400000){ toast('Already spun today'); return; }
+  const prizes = [0, 3, 5, 7, 10, 15];
+  const pct = prizes[Math.floor(Math.random() * prizes.length)];
+  lastSpinAt = now;
+  if(pct > 0){
+    document.getElementById('spin-result').innerText = `🎉 You won ${pct}% discount!`;
+    toast('🎉 ' + pct + '% discount won!');
+  } else {
+    document.getElementById('spin-result').innerText = '😔 No luck this time';
+    toast('Try again tomorrow');
+  }
+}
+window.spinWheel = spinWheel;
 
 document.addEventListener('DOMContentLoaded', () => { go('home'); });
