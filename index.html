@@ -3,110 +3,167 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>GadgetHub BD — ইলেকট্রনিক্স মার্কেটপ্লেস</title>
+<title>GadgetHub BD — Secure Digital Marketplace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style>
   :root{
-    --bg: #0A0E14; --panel: #111826; --panel-2: #0D1320;
-    --border: #1E2733; --text: #EAF2F5; --muted: #7C8B99;
-    --accent: #00E5C7; --amber: #FFB020; --danger: #FF5C6A;
-    --purple: #A78BFA; --pink: #F472B6; --green: #22C55E;
+    --bg: #0A0E0F;
+    --panel: #0F1A18;
+    --panel-2: #0B1512;
+    --border: #1B2B28;
+    --text: #E8F5F1;
+    --muted: #6B8681;
+    --accent: #00FF88;
+    --accent-2: #00CC6E;
+    --accent-dim: #0A3D2A;
+    --amber: #FFB020;
+    --danger: #FF5C6A;
+    --purple: #A78BFA;
+    --pink: #F472B6;
+    --green: #22C55E;
     color-scheme: dark;
   }
   *{ box-sizing: border-box; }
-  body{ background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-  .font-display{ font-family:'Space Grotesk', sans-serif; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(0,255,136,0.04), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0,255,136,0.03), transparent 40%);
+    background-attachment: fixed;
+  }
+  .font-display{ font-family:'Space Grotesk', sans-serif; letter-spacing: 0.5px; }
   .hidden-section{ display:none !important; }
   ::-webkit-scrollbar{ width:0; height:0; }
   .card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; }
-  .btn-accent{ background:var(--accent); color:#062622; font-weight:700; }
+  .btn-accent{ background:var(--accent); color:#062A1A; font-weight:700; }
   .btn-accent:active{ transform: scale(.97); }
   .chip{ background:var(--panel-2); border:1px solid var(--border); }
   .input-field{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); }
   .input-field:focus{ outline:none; border-color:var(--accent); }
   .nav-active{ color:var(--accent) !important; }
-  .fade-in{ animation: fadeIn .18s ease; }
-  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)} }
+  .fade-in{ animation: fadeIn .25s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
   .safe-bottom-nav{ padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   .heart-active{ color:var(--pink) !important; }
   .status-pending{ color:var(--amber); }
   .status-approved{ color:var(--green); }
   .status-rejected{ color:var(--danger); }
+  .glow{ box-shadow: 0 0 20px rgba(0,255,136,0.25); }
+  .glow-text{ text-shadow: 0 0 10px rgba(0,255,136,0.6); }
+  .menu-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    transition: all 0.2s;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .menu-item:active { transform: scale(0.98); background: var(--panel-2); }
+  .menu-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .avatar-ring {
+    padding: 3px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--accent), transparent, var(--accent));
+    box-shadow: 0 0 24px rgba(0,255,136,0.4);
+  }
+  .avatar-inner {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: var(--panel-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: var(--accent);
+  }
+  .balance-pill {
+    background: var(--panel-2);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 22px;
+    color: var(--accent);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 </style>
 </head>
 <body class="min-h-screen">
 
-<header class="sticky top-0 z-40 border-b" style="background:rgba(10,14,20,.92);backdrop-filter:blur(8px);border-color:var(--border); padding-top: env(safe-area-inset-top,0px);">
+<!-- HEADER -->
+<header class="sticky top-0 z-40 border-b" style="background:rgba(10,14,15,.94);backdrop-filter:blur(12px);border-color:var(--border); padding-top: env(safe-area-inset-top,0px);">
   <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-2 select-none">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z" fill="#062622"/></svg>
+    <div class="flex items-center gap-2 select-none" onclick="go('home')">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center glow" style="background:var(--accent)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z" fill="#062A1A"/></svg>
       </div>
-      <div class="text-left leading-none">
-        <div class="font-display font-bold text-base tracking-tight">GadgetHub <span style="color:var(--accent)">BD</span></div>
-        <div class="text-[10px]" style="color:var(--muted)">অথেন্টিক ইলেকট্রনিক্স</div>
+      <div class="text-left leading-tight">
+        <div class="font-display font-bold text-base" style="color:var(--accent)">EH GADGET</div>
+        <div class="text-[9px]" style="color:var(--muted);letter-spacing:1.5px">// SECURE DIGITAL MARKETPLACE</div>
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="go('add-balance')" class="chip rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-        <span style="color:var(--accent)">৳</span><span id="nav-balance">0</span>
-      </button>
-      <button id="nav-auth-btn" onclick="openAuth('login')" class="btn-accent px-4 py-1.5 rounded-lg text-xs">লগইন</button>
+      <div class="chip rounded-full px-3 py-1.5 text-xs font-bold flex items-center gap-1" style="border-color:var(--accent)">
+        <span style="color:var(--accent)">৳</span><span id="nav-balance" style="color:var(--accent)">0</span>
+      </div>
+      <button id="nav-auth-btn" onclick="openAuth('login')" class="btn-accent px-4 py-1.5 rounded-lg text-xs">PROFILE</button>
     </div>
   </div>
 </header>
 
+<!-- SEARCH -->
 <div class="max-w-4xl mx-auto px-4 pt-4">
   <div class="relative">
-    <svg class="absolute left-3 top-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C8B99" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input id="search-input" oninput="renderProducts()" type="text" placeholder="প্রোডাক্ট খুঁজুন..." class="input-field w-full rounded-xl pl-10 pr-4 py-2.5 text-sm">
+    <span class="absolute left-3 top-3.5 text-sm">🔍</span>
+    <input id="search-input" oninput="renderProducts()" type="text" placeholder="প্রোডাক্ট সার্চ করুন... Instant Search" class="input-field w-full rounded-xl pl-10 pr-4 py-3 text-sm">
   </div>
 </div>
 
-<main class="max-w-4xl mx-auto px-4 pb-28">
+<main class="max-w-4xl mx-auto px-4 pb-32">
 
+  <!-- HOME -->
   <section id="section-home" class="space-y-6 pt-4">
-    <div class="card p-1 overflow-hidden">
-      <div class="rounded-xl h-36 relative flex items-end p-4" style="background:linear-gradient(135deg,#0B4A43,#0A0E14)">
-        <div>
-          <div class="font-display font-bold text-lg">GadgetHub BD</div>
-          <div class="text-xs" style="color:var(--muted)">সেরা দামে অথেন্টিক গ্যাজেট</div>
-        </div>
-      </div>
+    <div class="card p-4 overflow-hidden relative">
+      <div class="absolute right-3 top-3 text-6xl opacity-10">💎</div>
+      <div class="font-display font-bold text-lg" style="color:var(--accent)">WELCOME TO GADGETHUB</div>
+      <div class="text-xs mt-1" style="color:var(--muted)">সেরা দামে অথেন্টিক গ্যাজেট — ইনস্ট্যান্ট ডেলিভারি</div>
     </div>
+
     <div id="categories-bar" class="flex gap-2 overflow-x-auto pb-1"></div>
+
     <div class="flex justify-between items-center">
-      <h2 class="font-display font-bold text-sm" style="color:var(--accent)">সব প্রোডাক্ট</h2>
+      <h2 class="font-display font-bold text-sm" style="color:var(--accent)">🔥 ALL PRODUCTS</h2>
       <span id="product-count" class="chip text-[11px] px-2.5 py-1 rounded" style="color:var(--muted)">—</span>
     </div>
+
     <div id="product-grid" class="grid grid-cols-2 gap-3"></div>
-    <div class="grid grid-cols-2 gap-3 mt-8">
-      <button onclick="go('leaderboard')" class="card p-3 flex items-center gap-3 text-left">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--panel-2);color:var(--amber)">🏆</div>
-        <div><p class="font-bold text-xs">লিডারবোর্ড</p><p class="text-[10px]" style="color:var(--muted)">টপ ক্রেতা</p></div>
-      </button>
-      <button onclick="go('wishlist')" class="card p-3 flex items-center gap-3 text-left">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--panel-2);color:var(--pink)">💖</div>
-        <div><p class="font-bold text-xs">উইশলিস্ট</p><p class="text-[10px]" style="color:var(--muted)">সেভ করা</p></div>
-      </button>
-      <button onclick="go('giftcard')" class="card p-3 flex items-center gap-3 text-left">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--panel-2);color:var(--danger)">🎟️</div>
-        <div><p class="font-bold text-xs">গিফট কার্ড</p><p class="text-[10px]" style="color:var(--muted)">কোড রিডিম</p></div>
-      </button>
-      <button onclick="go('request')" class="card p-3 flex items-center gap-3 text-left">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--panel-2);color:var(--accent)">📝</div>
-        <div><p class="font-bold text-xs">রিকোয়েস্ট</p><p class="text-[10px]" style="color:var(--muted)">প্রোডাক্ট চান?</p></div>
-      </button>
-    </div>
   </section>
 
+  <!-- ADD BALANCE -->
   <section id="section-add-balance" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('home')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4">
-      <h3 class="text-center font-display font-bold text-sm mb-1" style="color:var(--accent)">ব্যালেন্স যোগ করুন</h3>
+      <h3 class="text-center font-display font-bold text-sm mb-1" style="color:var(--accent)">💰 ADD FUNDS</h3>
       <p class="text-center text-[11px] mb-4" style="color:var(--muted)">নিচের নাম্বারে Send Money করুন</p>
       <div id="payment-numbers-list" class="space-y-2 mb-4"></div>
       <div class="chip p-3 rounded-lg space-y-2 text-xs">
@@ -115,155 +172,287 @@
         <input type="text" id="trx-id" placeholder="ট্রানজেকশন আইডি" class="input-field w-full rounded px-3 py-2.5">
         <input type="text" id="sender-number" placeholder="যে নাম্বার থেকে পাঠিয়েছেন" class="input-field w-full rounded px-3 py-2.5">
         <button onclick="submitPaymentRequest()" class="btn-accent w-full py-2.5 rounded">রিকোয়েস্ট পাঠান</button>
-        <p class="text-[10px] pt-1" style="color:var(--muted)">⚠️ অ্যাডমিন যাচাই করে অ্যাপ্রুভ করলে ব্যালেন্স যোগ হবে।</p>
+        <p class="text-[10px] pt-1" style="color:var(--muted)">⚠️ অ্যাডমিন যাচাই করে approve করলে ব্যালেন্স যোগ হবে।</p>
       </div>
     </div>
   </section>
 
+  <!-- PRODUCT DETAIL -->
   <section id="section-product-detail" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('home')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('home')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4 space-y-3">
-      <div class="h-44 rounded-lg overflow-hidden relative" style="background:var(--panel-2)">
+      <div class="h-52 rounded-lg overflow-hidden relative" style="background:var(--panel-2)">
         <img id="detail-img" class="w-full h-full object-cover">
-        <button id="detail-heart" onclick="toggleWishlistCurrent()" class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-base" style="background:rgba(10,14,20,.7)">🤍</button>
+        <button id="detail-heart" onclick="toggleWishlistCurrent()" class="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-lg" style="background:rgba(10,14,15,.8)">🤍</button>
       </div>
       <h3 id="detail-title" class="font-display font-bold text-base" style="color:var(--accent)"></h3>
       <div class="flex items-center gap-2">
-        <p id="detail-price" class="text-xl font-extrabold"></p>
+        <p id="detail-price" class="text-xl font-extrabold" style="color:var(--accent)"></p>
         <p id="detail-old-price" class="text-xs line-through" style="color:var(--muted)"></p>
       </div>
       <p id="detail-desc" class="text-xs leading-relaxed chip p-3 rounded" style="color:#C3CDD6"></p>
       <div class="flex gap-2 pt-2">
-        <button onclick="addCurrentToCart()" class="flex-1 chip py-2.5 rounded text-xs font-bold" style="color:var(--accent)">কার্টে যোগ</button>
-        <button onclick="executeBuy()" class="flex-1 btn-accent py-2.5 rounded text-xs">এখনই কিনুন</button>
+        <button onclick="addCurrentToCart()" class="flex-1 chip py-3 rounded text-xs font-bold" style="color:var(--accent)">+ CART</button>
+        <button onclick="executeBuy()" class="flex-1 btn-accent py-3 rounded text-xs">BUY NOW</button>
       </div>
     </div>
   </section>
 
+  <!-- MY ORDERS -->
   <section id="section-my-orders" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4">
-      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">আমার অর্ডার</h3>
+      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">🛍️ MY ORDERS</h3>
       <div id="orders-list" class="space-y-2 text-xs"></div>
     </div>
   </section>
 
+  <!-- MY PAYMENTS -->
   <section id="section-my-payments" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4">
-      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">আমার পেমেন্ট</h3>
+      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">💳 MY PAYMENTS</h3>
       <div id="my-payments-list" class="space-y-2 text-xs"></div>
     </div>
   </section>
 
+  <!-- PROFILE -->
   <section id="section-profile" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('home')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
-    <div class="card p-5 text-center">
-      <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-3 text-2xl" style="background:var(--panel-2);color:var(--accent)">👤</div>
-      <h3 id="profile-name" class="font-display font-bold text-base">গেস্ট</h3>
-      <p id="profile-email" class="text-xs mb-3" style="color:var(--muted)"></p>
-      <p class="font-extrabold text-sm" style="color:var(--accent)">৳ <span id="profile-balance">0</span></p>
+    <div class="text-center py-4">
+      <div class="avatar-ring w-24 h-24 mx-auto">
+        <div class="avatar-inner">👤</div>
+      </div>
+      <h3 id="profile-name" class="font-display font-bold text-xl mt-4" style="color:var(--accent)">User</h3>
+      <p id="profile-email" class="text-xs mt-1" style="color:var(--muted)"></p>
+      <p id="profile-phone" class="text-xs mt-0.5" style="color:var(--muted)"></p>
+      <div class="balance-pill mt-4">
+        <span>৳</span>
+        <span id="profile-balance">0</span>
+      </div>
     </div>
-    <div class="space-y-2">
-      <button onclick="go('my-orders')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>🛍️ আমার অর্ডার</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="go('my-payments')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>💳 আমার পেমেন্ট</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="go('wishlist')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>💖 উইশলিস্ট</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="go('giftcard')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>🎟️ গিফট কার্ড</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="go('leaderboard')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>🏆 লিডারবোর্ড</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="go('request')" class="w-full flex justify-between items-center card p-3.5 rounded-lg text-xs"><span>📝 কাস্টম রিকোয়েস্ট</span><span style="color:var(--muted)">›</span></button>
-      <button onclick="doLogout()" class="w-full flex justify-center items-center card p-3.5 rounded-lg text-xs font-bold" style="color:var(--danger);border-color:var(--danger)">লগআউট</button>
+
+    <div class="space-y-2.5">
+      <button onclick="go('my-orders')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(0,255,136,0.1);color:var(--accent)">🛍️</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">MY ORDERS</div>
+          <div class="text-[10px]" style="color:var(--muted)">ORDER HISTORY + TRACKING</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('my-payments')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(255,176,32,0.1);color:var(--amber)">💳</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">MY PAYMENTS</div>
+          <div class="text-[10px]" style="color:var(--muted)">PAYMENT REQUESTS</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('referral')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(0,255,136,0.1);color:var(--accent)">🔗</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">REFERRAL</div>
+          <div class="text-[10px]" style="color:var(--muted)">INVITE & EARN</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('spin')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(255,176,32,0.1);color:var(--amber)">🎮</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">SPIN & WIN</div>
+          <div class="text-[10px]" style="color:var(--muted)">LUCKY DISCOUNT</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('leaderboard')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(255,176,32,0.1);color:var(--amber)">🏆</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">LEADERBOARD</div>
+          <div class="text-[10px]" style="color:var(--muted)">TOP BUYERS</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('wishlist')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(244,114,182,0.1);color:var(--pink)">💖</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">WISHLIST</div>
+          <div class="text-[10px]" style="color:var(--muted)">SAVED ITEMS</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('giftcard')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(244,114,182,0.1);color:var(--pink)">🎟️</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">GIFT CARD</div>
+          <div class="text-[10px]" style="color:var(--muted)">REDEEM CODE</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('request')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(0,255,136,0.1);color:var(--accent)">📝</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">REQUEST</div>
+          <div class="text-[10px]" style="color:var(--muted)">CUSTOM PRODUCT</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="go('support')" class="menu-item">
+        <div class="menu-icon" style="background:rgba(167,139,250,0.1);color:var(--purple)">🎧</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm">SUPPORT</div>
+          <div class="text-[10px]" style="color:var(--muted)">HELP CENTER</div>
+        </div>
+        <span style="color:var(--muted)">›</span>
+      </button>
+
+      <button onclick="doLogout()" class="menu-item" style="border-color:rgba(255,92,106,0.3)">
+        <div class="menu-icon" style="background:rgba(255,92,106,0.1);color:var(--danger)">🚪</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm" style="color:var(--danger)">LOGOUT</div>
+          <div class="text-[10px]" style="color:var(--muted)">SIGN OUT FROM ACCOUNT</div>
+        </div>
+      </button>
     </div>
   </section>
 
+  <!-- WISHLIST -->
   <section id="section-wishlist" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
-    <h3 class="font-display font-bold text-sm" style="color:var(--accent)">💖 উইশলিস্ট</h3>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
+    <h3 class="font-display font-bold text-sm" style="color:var(--accent)">💖 WISHLIST</h3>
     <div id="wishlist-grid" class="grid grid-cols-2 gap-3"></div>
   </section>
 
+  <!-- GIFT CARD -->
   <section id="section-giftcard" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4 space-y-3">
-      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">🎟️ গিফট কার্ড রিডিম</h3>
-      <input id="giftcode-input" placeholder="গিফট কোড" class="input-field w-full rounded px-3 py-2.5 text-xs uppercase">
-      <button onclick="redeemGiftCode()" class="btn-accent w-full py-2.5 rounded text-xs">রিডিম করুন</button>
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">🎟️ REDEEM GIFT CARD</h3>
+      <input id="giftcode-input" placeholder="GIFT CODE" class="input-field w-full rounded px-3 py-2.5 text-xs uppercase">
+      <button onclick="redeemGiftCode()" class="btn-accent w-full py-2.5 rounded text-xs">REDEEM</button>
     </div>
   </section>
 
+  <!-- SPIN -->
+  <section id="section-spin" class="hidden-section space-y-4 pt-4">
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
+    <div class="card p-5 text-center space-y-4">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">🎮 SPIN & WIN</h3>
+      <div class="text-6xl">🎰</div>
+      <button onclick="spinWheel()" class="btn-accent px-8 py-3 rounded-lg text-xs">SPIN NOW</button>
+      <p id="spin-result" class="text-xs" style="color:var(--muted)"></p>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD -->
   <section id="section-leaderboard" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('home')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4">
-      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">🏆 টপ ক্রেতা</h3>
+      <h3 class="font-display font-bold text-sm mb-4" style="color:var(--accent)">🏆 TOP BUYERS</h3>
       <div id="leaderboard-list" class="space-y-2 text-xs"></div>
     </div>
   </section>
 
-  <section id="section-request" class="hidden-section space-y-4 pt-4">
-    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← ফিরে যান</button>
+  <!-- REFERRAL -->
+  <section id="section-referral" class="hidden-section space-y-4 pt-4">
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
     <div class="card p-4 space-y-3">
-      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">📝 কাস্টম প্রোডাক্ট রিকোয়েস্ট</h3>
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">🔗 REFERRAL</h3>
+      <p class="text-xs" style="color:var(--muted)">আপনার লিংক শেয়ার করে আয় করুন</p>
+      <div class="chip p-3 rounded flex items-center justify-between gap-2">
+        <span id="referral-code" class="text-xs font-bold" style="color:var(--accent)">—</span>
+        <button onclick="copyReferral()" class="chip px-2.5 py-1.5 rounded text-[10px]">COPY</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- REQUEST -->
+  <section id="section-request" class="hidden-section space-y-4 pt-4">
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
+    <div class="card p-4 space-y-3">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">📝 CUSTOM REQUEST</h3>
       <input id="req-title" placeholder="প্রোডাক্টের নাম" class="input-field w-full rounded px-3 py-2.5 text-xs">
       <textarea id="req-details" rows="3" placeholder="বিস্তারিত" class="input-field w-full rounded px-3 py-2.5 text-xs"></textarea>
-      <button onclick="submitRequest()" class="btn-accent w-full py-2.5 rounded text-xs">পাঠান</button>
+      <button onclick="submitRequest()" class="btn-accent w-full py-2.5 rounded text-xs">SEND</button>
+    </div>
+  </section>
+
+  <!-- SUPPORT -->
+  <section id="section-support" class="hidden-section space-y-4 pt-4">
+    <button onclick="go('profile')" class="chip px-3 py-1.5 rounded-lg text-xs font-bold" style="color:var(--accent)">← BACK</button>
+    <div class="card p-4 text-center space-y-4">
+      <div class="text-5xl">🎧</div>
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">SUPPORT</h3>
+      <p class="text-xs" style="color:var(--muted)">যেকোনো সমস্যায় যোগাযোগ করুন</p>
+      <a href="https://wa.me/8801933568979" target="_blank" class="inline-block btn-accent px-6 py-3 rounded-lg text-xs">WhatsApp Chat</a>
     </div>
   </section>
 
 </main>
 
-<nav class="fixed bottom-0 inset-x-0 z-40 border-t safe-bottom-nav" style="background:rgba(10,14,20,.96);backdrop-filter:blur(8px);border-color:var(--border)">
-  <div class="max-w-4xl mx-auto py-2.5 px-6 flex justify-around items-center text-[11px]" style="color:var(--muted)">
-    <button onclick="go('home')" id="nav-home" class="flex flex-col items-center gap-0.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-      হোম
+<!-- BOTTOM NAV -->
+<nav class="fixed bottom-0 inset-x-0 z-40 border-t safe-bottom-nav" style="background:rgba(10,14,15,.96);backdrop-filter:blur(12px);border-color:var(--border)">
+  <div class="max-w-4xl mx-auto py-2.5 px-4 flex justify-around items-center text-[10px]" style="color:var(--muted)">
+    <button onclick="go('home')" id="nav-home" class="flex flex-col items-center gap-1">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      <span>HOME</span>
     </button>
-    <button onclick="go('add-balance')" class="flex flex-col items-center gap-0.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-      ফান্ড
+    <button onclick="go('add-balance')" class="flex flex-col items-center gap-1">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      <span>ADD</span>
     </button>
-    <button onclick="openCart()" class="flex flex-col items-center gap-0.5 relative">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
-      কার্ট
-      <span id="cart-badge" class="absolute -top-1 -right-2.5 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center" style="background:var(--accent);color:#062622">0</span>
+    <button onclick="openCart()" class="flex flex-col items-center gap-1 relative">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      <span>CART</span>
+      <span id="cart-badge" class="absolute -top-1 -right-2 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center" style="background:var(--accent);color:#062A1A">0</span>
     </button>
-    <button onclick="go(currentUser?'profile':'login-redirect')" class="flex flex-col items-center gap-0.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-      প্রোফাইল
+    <button onclick="go(currentUser?'profile':'login-redirect')" class="flex flex-col items-center gap-1">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      <span>PROFILE</span>
     </button>
   </div>
 </nav>
 
-<div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.85)">
-  <div class="card w-full max-w-sm p-5 relative space-y-4 fade-in">
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.9)">
+  <div class="card w-full max-w-sm p-5 relative space-y-4 fade-in glow">
     <button onclick="closeAuth()" class="absolute top-3 right-4 text-lg" style="color:var(--muted)">✕</button>
-    <h3 id="auth-title" class="text-center font-display font-bold text-sm" style="color:var(--accent)">একাউন্ট</h3>
+    <h3 id="auth-title" class="text-center font-display font-bold text-sm" style="color:var(--accent)">ACCOUNT</h3>
     <div id="auth-tabs" class="flex chip rounded-lg p-1 text-xs font-bold">
-      <button onclick="setAuthMode('login')" id="tab-login" class="flex-1 py-1.5 rounded">লগইন</button>
-      <button onclick="setAuthMode('signup')" id="tab-signup" class="flex-1 py-1.5 rounded">রেজিস্টার</button>
+      <button onclick="setAuthMode('login')" id="tab-login" class="flex-1 py-1.5 rounded">LOGIN</button>
+      <button onclick="setAuthMode('signup')" id="tab-signup" class="flex-1 py-1.5 rounded">SIGN UP</button>
     </div>
     <div class="space-y-3 text-xs">
-      <input type="text" id="auth-username" placeholder="ইউজারনেম" class="input-field w-full rounded px-3 py-2.5 hidden">
-      <input type="text" id="auth-phone" placeholder="মোবাইল নাম্বার" class="input-field w-full rounded px-3 py-2.5 hidden">
-      <input type="email" id="auth-email" placeholder="ইমেইল" class="input-field w-full rounded px-3 py-2.5">
-      <input type="password" id="auth-pass" placeholder="পাসওয়ার্ড (৬+)" class="input-field w-full rounded px-3 py-2.5">
-      <button onclick="handleAuthSubmit()" class="btn-accent w-full py-2.5 rounded">সাবমিট</button>
-      <button id="forgot-pass-btn" onclick="handleForgotPassword()" class="w-full text-[11px] text-center py-1" style="color:var(--muted)">পাসওয়ার্ড ভুলে গেছেন?</button>
+      <input type="text" id="auth-username" placeholder="Username" class="input-field w-full rounded px-3 py-2.5 hidden">
+      <input type="text" id="auth-phone" placeholder="Mobile Number" class="input-field w-full rounded px-3 py-2.5 hidden">
+      <input type="email" id="auth-email" placeholder="Email" class="input-field w-full rounded px-3 py-2.5">
+      <input type="password" id="auth-pass" placeholder="Password (6+)" class="input-field w-full rounded px-3 py-2.5">
+      <button onclick="handleAuthSubmit()" class="btn-accent w-full py-2.5 rounded">SUBMIT</button>
+      <button id="forgot-pass-btn" onclick="handleForgotPassword()" class="w-full text-[11px] text-center py-1" style="color:var(--muted)">Forgot password?</button>
     </div>
-    <p id="auth-hint" class="text-[10px] text-center" style="color:var(--muted)"></p>
   </div>
 </div>
 
+<!-- CART DRAWER -->
 <div id="cart-modal" class="fixed inset-y-0 right-0 z-50 w-full max-w-xs border-l hidden flex-col" style="background:var(--bg);border-color:var(--border)">
   <div class="p-4 border-b flex justify-between items-center" style="border-color:var(--border)">
-    <h3 class="font-display font-bold text-sm" style="color:var(--accent)">শপিং কার্ট</h3>
+    <h3 class="font-display font-bold text-sm" style="color:var(--accent)">🛒 CART</h3>
     <button onclick="closeCart()" class="text-lg" style="color:var(--muted)">✕</button>
   </div>
   <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs"></div>
   <div class="p-4 border-t space-y-3" style="border-color:var(--border);background:var(--panel-2)">
     <div class="flex justify-between text-sm font-bold">
-      <span>মোট:</span>
+      <span>Total:</span>
       <span id="cart-total-price" style="color:var(--accent)">৳0</span>
     </div>
-    <button onclick="checkoutCart()" class="btn-accent w-full py-2.5 rounded text-xs">চেকআউট</button>
+    <button onclick="checkoutCart()" class="btn-accent w-full py-2.5 rounded text-xs">CHECKOUT</button>
   </div>
 </div>
 
