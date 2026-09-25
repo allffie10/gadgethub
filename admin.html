@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin — GadgetHub BD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+  :root{
+    --bg: #0A0E14; --panel: #111826; --panel-2: #0D1320;
+    --border: #1E2733; --text: #EAF2F5; --muted: #7C8B99;
+    --accent: #00E5C7; --amber: #FFB020; --danger: #FF5C6A;
+    --purple: #A78BFA; --pink: #F472B6; --green: #22C55E;
+    color-scheme: dark;
+  }
+  *{ box-sizing: border-box; }
+  body{ background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+  .font-display{ font-family:'Space Grotesk', sans-serif; }
+  .hidden-section{ display:none !important; }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; }
+  .btn-accent{ background:var(--accent); color:#062622; font-weight:700; }
+  .chip{ background:var(--panel-2); border:1px solid var(--border); }
+  .input-field{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); }
+  .input-field:focus{ outline:none; border-color:var(--accent); }
+  .status-pending{ color:var(--amber); }
+  .status-approved{ color:var(--green); }
+  .status-rejected{ color:var(--danger); }
+  .tab-active{ color:var(--accent) !important; border-color:var(--accent) !important; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div id="login-screen" class="fixed inset-0 flex items-center justify-center p-4" style="background:var(--bg)">
+  <div class="card w-full max-w-sm p-6 space-y-4">
+    <div class="text-center">
+      <div class="font-display font-bold text-lg">GadgetHub <span style="color:var(--accent)">Admin</span></div>
+      <p class="text-xs mt-1" style="color:var(--muted)">শুধুমাত্র স্টোর মালিকের জন্য</p>
+    </div>
+    <input type="email" id="admin-email" placeholder="Admin Email" class="input-field w-full rounded px-3 py-2.5 text-xs">
+    <input type="password" id="admin-pass" placeholder="Password" class="input-field w-full rounded px-3 py-2.5 text-xs">
+    <button onclick="adminLogin()" class="btn-accent w-full py-2.5 rounded text-xs">লগইন</button>
+    <p id="login-error" class="text-xs text-center" style="color:var(--danger)"></p>
+  </div>
+</div>
+
+<div id="admin-panel" class="hidden-section max-w-5xl mx-auto px-4 py-4">
+  <header class="flex justify-between items-center mb-4">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z" fill="#062622"/></svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-sm">GadgetHub Admin</div>
+        <div class="text-[10px]" style="color:var(--muted)">Management Console</div>
+      </div>
+    </div>
+    <button onclick="adminLogout()" class="chip px-3 py-1.5 rounded text-xs" style="color:var(--danger)">লগআউট</button>
+  </header>
+
+  <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+    <button data-tab="dashboard" onclick="switchTab('dashboard')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">📊 ড্যাশবোর্ড</button>
+    <button data-tab="payments" onclick="switchTab('payments')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">💰 পেমেন্ট</button>
+    <button data-tab="orders" onclick="switchTab('orders')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">📦 অর্ডার</button>
+    <button data-tab="products" onclick="switchTab('products')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">🏪 প্রোডাক্ট</button>
+    <button data-tab="users" onclick="switchTab('users')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">👥 ইউজার</button>
+    <button data-tab="paymentNumbers" onclick="switchTab('paymentNumbers')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">📱 পেমেন্ট নাম্বার</button>
+    <button data-tab="gifts" onclick="switchTab('gifts')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">🎁 গিফট কোড</button>
+    <button data-tab="categories" onclick="switchTab('categories')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">📂 ক্যাটাগরি</button>
+    <button data-tab="requests" onclick="switchTab('requests')" class="tab-btn chip px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">📨 রিকোয়েস্ট</button>
+  </div>
+
+  <div id="tab-dashboard" class="tab-panel space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Total Sales</p><p id="stat-sales" class="font-display font-bold text-xl mt-1" style="color:var(--accent)">৳0</p></div>
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Total Orders</p><p id="stat-orders" class="font-display font-bold text-xl mt-1">0</p></div>
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Total Users</p><p id="stat-users" class="font-display font-bold text-xl mt-1">0</p></div>
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Products</p><p id="stat-products" class="font-display font-bold text-xl mt-1">0</p></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Pending Payments</p><p id="stat-pending-payments" class="font-display font-bold text-xl mt-1" style="color:var(--amber)">0</p></div>
+      <div class="card p-4"><p class="text-[10px]" style="color:var(--muted)">Pending Orders</p><p id="stat-pending-orders" class="font-display font-bold text-xl mt-1" style="color:var(--amber)">0</p></div>
+    </div>
+    <div class="card p-4">
+      <p class="font-display font-bold text-sm mb-3" style="color:var(--accent)">📈 Recent Orders (7 days)</p>
+      <div id="revenue-chart" class="h-40 flex items-end gap-1"></div>
+    </div>
+  </div>
+
+  <div id="tab-payments" class="tab-panel hidden-section space-y-3">
+    <div class="flex gap-2">
+      <button onclick="filterPayments('pending', this)" class="pay-filter chip px-3 py-1.5 rounded-lg text-xs font-bold tab-active">পেন্ডিং</button>
+      <button onclick="filterPayments('approved', this)" class="pay-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">অ্যাপ্রুভড</button>
+      <button onclick="filterPayments('rejected', this)" class="pay-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">রিজেক্টেড</button>
+      <button onclick="filterPayments('all', this)" class="pay-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">সব</button>
+    </div>
+    <div id="payments-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-orders" class="tab-panel hidden-section space-y-3">
+    <div class="flex gap-2">
+      <button onclick="filterOrders('pending', this)" class="ord-filter chip px-3 py-1.5 rounded-lg text-xs font-bold tab-active">পেন্ডিং</button>
+      <button onclick="filterOrders('approved', this)" class="ord-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">অ্যাপ্রুভড</button>
+      <button onclick="filterOrders('rejected', this)" class="ord-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">রিজেক্টেড</button>
+      <button onclick="filterOrders('all', this)" class="ord-filter chip px-3 py-1.5 rounded-lg text-xs font-bold">সব</button>
+    </div>
+    <div id="orders-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-products" class="tab-panel hidden-section space-y-4">
+    <div class="card p-4 space-y-3">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">+ নতুন প্রোডাক্ট</h3>
+      <input id="ap-title" placeholder="প্রোডাক্টের নাম" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <div class="grid grid-cols-2 gap-2">
+        <input id="ap-price" type="number" placeholder="দাম (৳)" class="input-field w-full rounded px-3 py-2.5 text-xs">
+        <input id="ap-old-price" type="number" placeholder="আগের দাম" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      </div>
+      <input id="ap-category" placeholder="ক্যাটাগরি" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <input id="ap-image" placeholder="ছবির URL (ImgBB থেকে)" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <select id="ap-badge" class="input-field w-full rounded px-3 py-2.5 text-xs">
+        <option value="">ব্যাজ নেই</option>
+        <option value="HOT">HOT</option>
+        <option value="NEW">NEW</option>
+        <option value="SALE">SALE</option>
+      </select>
+      <textarea id="ap-desc" rows="3" placeholder="বিবরণ" class="input-field w-full rounded px-3 py-2.5 text-xs"></textarea>
+      <button onclick="addProduct()" class="btn-accent w-full py-2.5 rounded text-xs">পাবলিশ</button>
+    </div>
+    <div id="products-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-users" class="tab-panel hidden-section">
+    <div id="users-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-paymentNumbers" class="tab-panel hidden-section space-y-4">
+    <div class="card p-4 space-y-3">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">+ নতুন পেমেন্ট নাম্বার</h3>
+      <select id="pn-type" class="input-field w-full rounded px-3 py-2.5 text-xs">
+        <option value="bKash">bKash</option>
+        <option value="Nagad">Nagad</option>
+        <option value="Rocket">Rocket</option>
+      </select>
+      <input id="pn-number" placeholder="নাম্বার (01XXXXXXXXX)" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <input id="pn-name" placeholder="নাম (ঐচ্ছিক)" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <label class="flex items-center gap-2 text-xs"><input type="checkbox" id="pn-personal"> Personal</label>
+      <button onclick="addPaymentNumber()" class="btn-accent w-full py-2.5 rounded text-xs">যোগ করুন</button>
+    </div>
+    <div id="payment-numbers-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-gifts" class="tab-panel hidden-section space-y-4">
+    <div class="card p-4 space-y-3">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">+ নতুন গিফট কোড</h3>
+      <input id="gc-code" placeholder="কোড (SALE100)" class="input-field w-full rounded px-3 py-2.5 text-xs uppercase">
+      <input id="gc-amount" type="number" placeholder="বোনাস (৳)" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <input id="gc-max" type="number" placeholder="Max uses (0 = unlimited)" class="input-field w-full rounded px-3 py-2.5 text-xs" value="1">
+      <button onclick="addGiftCode()" class="btn-accent w-full py-2.5 rounded text-xs">তৈরি করুন</button>
+    </div>
+    <div id="gifts-list" class="space-y-2"></div>
+  </div>
+
+  <div id="tab-categories" class="tab-panel hidden-section space-y-4">
+    <div class="card p-4 space-y-3">
+      <h3 class="font-display font-bold text-sm" style="color:var(--accent)">ক্যাটাগরি ম্যানেজ</h3>
+      <input id="new-category" placeholder="নতুন ক্যাটাগরি" class="input-field w-full rounded px-3 py-2.5 text-xs">
+      <button onclick="addCategory()" class="btn-accent w-full py-2.5 rounded text-xs">যোগ করুন</button>
+      <div id="categories-list" class="flex flex-wrap gap-2 mt-3"></div>
+    </div>
+  </div>
+
+  <div id="tab-requests" class="tab-panel hidden-section">
+    <div id="requests-list" class="space-y-2"></div>
+  </div>
+</div>
+
+<script type="module" src="./admin-app.js"></script>
+</body>
+</html>

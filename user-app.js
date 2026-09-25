@@ -1,0 +1,514 @@
+import {
+  auth, db,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+  onAuthStateChanged, sendPasswordResetEmail,
+  collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, where, orderBy, serverTimestamp, increment, arrayUnion
+} from "./firebase-config.js";
+
+let currentUser = null;
+let userProfile = null;
+let products = [];
+let paymentNumbers = [];
+let categories = [];
+let settings = {};
+let cart = [];
+let wishlist = [];
+let myOrders = [];
+let myPayments = [];
+let currentProduct = {};
+let authMode = 'login';
+let selectedCategory = '';
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n) => '৳' + Number(n || 0).toLocaleString('bn-BD');
+
+let toastTimer;
+function toast(msg){
+  let t = document.getElementById('gh-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'gh-toast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#111826;border:1px solid #1E2733;color:#EAF2F5;padding:10px 16px;border-radius:10px;font-size:12px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:88%;text-align:center;transition:opacity .2s;';
+    document.body.appendChild(t);
+  }
+  t.innerText = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.opacity='0'; }, 2400);
+}
+window.toast = toast;
+
+function go(section){
+  if(section === 'login-redirect'){ openAuth('login'); return; }
+  document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden-section'));
+  const target = document.getElementById('section-' + section);
+  if(target) target.classList.remove('hidden-section');
+  document.getElementById('nav-home').classList.toggle('nav-active', section === 'home');
+  if(section === 'profile') renderProfile();
+  if(section === 'wishlist') renderWishlist();
+  if(section === 'leaderboard') renderLeaderboard();
+  if(section === 'add-balance') renderPaymentNumbers();
+  window.scrollTo(0,0);
+}
+window.go = go;
+
+function openAuth(mode){
+  authMode = mode;
+  document.getElementById('auth-modal').classList.remove('hidden');
+  document.getElementById('auth-modal').classList.add('flex');
+  setAuthMode(mode);
+  ['auth-username','auth-phone','auth-email','auth-pass'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+}
+window.openAuth = openAuth;
+
+function closeAuth(){
+  document.getElementById('auth-modal').classList.add('hidden');
+  document.getElementById('auth-modal').classList.remove('flex');
+}
+window.closeAuth = closeAuth;
+
+function setAuthMode(m){
+  authMode = m;
+  const showSignup = m === 'signup';
+  document.getElementById('auth-username').classList.toggle('hidden', !showSignup);
+  document.getElementById('auth-phone').classList.toggle('hidden', !showSignup);
+  document.getElementById('tab-login').style.background = !showSignup ? 'var(--accent)' : 'transparent';
+  document.getElementById('tab-login').style.color = !showSignup ? '#062622' : 'var(--text)';
+  document.getElementById('tab-signup').style.background = showSignup ? 'var(--accent)' : 'transparent';
+  document.getElementById('tab-signup').style.color = showSignup ? '#062622' : 'var(--text)';
+}
+window.setAuthMode = setAuthMode;
+
+async function handleAuthSubmit(){
+  const username = document.getElementById('auth-username').value.trim();
+  const phone = document.getElementById('auth-phone').value.trim();
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+
+  if(!email || !pass){ toast('ইমেইল ও পাসওয়ার্ড দিন'); return; }
+  if(pass.length < 6){ toast('পাসওয়ার্ড ৬+ ক্যারেক্টার হতে হবে'); return; }
+
+  try {
+    if(authMode === 'signup'){
+      if(!username || !phone){ toast('সব তথ্য দিন'); return; }
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        username, email, phone, balance: 0, role: 'user', createdAt: serverTimestamp()
+      });
+      toast('✅ একাউন্ট তৈরি হয়েছে');
+    } else {
+      await signInWithEmailAndPassword(auth, email, pass);
+      toast('✅ লগইন সফল');
+    }
+    closeAuth();
+  } catch(err){
+    const msg = {
+      'auth/email-already-in-use': 'এই ইমেইল আগেই ব্যবহার হয়েছে',
+      'auth/invalid-email': 'সঠিক ইমেইল দিন',
+      'auth/weak-password': 'পাসওয়ার্ড দুর্বল',
+      'auth/user-not-found': 'এই ইমেইলে একাউন্ট নেই',
+      'auth/wrong-password': 'ভুল পাসওয়ার্ড',
+      'auth/invalid-credential': 'ভুল ইমেইল বা পাসওয়ার্ড'
+    }[err.code] || err.message;
+    toast('❌ ' + msg);
+  }
+}
+window.handleAuthSubmit = handleAuthSubmit;
+
+async function handleForgotPassword(){
+  const email = document.getElementById('auth-email').value.trim();
+  if(!email){ toast('আগে ইমেইল লিখুন'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    toast('✅ রিসেট লিংক পাঠানো হয়েছে');
+  } catch(err){ toast('❌ ' + err.message); }
+}
+window.handleForgotPassword = handleForgotPassword;
+
+async function doLogout(){
+  await signOut(auth);
+  toast('লগআউট হয়েছে');
+  go('home');
+}
+window.doLogout = doLogout;
+
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    currentUser = user;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if(snap.exists()){
+      userProfile = snap.data();
+      onSnapshot(doc(db, 'users', user.uid), (s) => {
+        if(s.exists()){ userProfile = s.data(); updateBalanceUI(); }
+      });
+    }
+    document.getElementById('nav-auth-btn').innerText = 'প্রোফাইল';
+    document.getElementById('nav-auth-btn').onclick = () => go('profile');
+    updateBalanceUI();
+    loadCart(); loadWishlist(); loadMyOrders(); loadMyPayments();
+  } else {
+    currentUser = null; userProfile = null;
+    document.getElementById('nav-auth-btn').innerText = 'লগইন';
+    document.getElementById('nav-auth-btn').onclick = () => openAuth('login');
+    updateBalanceUI();
+    cart = []; wishlist = []; myOrders = []; myPayments = [];
+    renderCart(); renderWishlist(); renderMyOrders(); renderMyPayments();
+  }
+});
+
+function updateBalanceUI(){
+  const bal = userProfile?.balance || 0;
+  document.getElementById('nav-balance').innerText = bal;
+  document.getElementById('profile-balance').innerText = bal;
+}
+
+onSnapshot(collection(db, 'products'), (snap) => {
+  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  products.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  renderProducts();
+});
+
+onSnapshot(collection(db, 'paymentNumbers'), (snap) => {
+  paymentNumbers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPaymentNumbers();
+});
+
+onSnapshot(doc(db, 'settings', 'general'), (snap) => {
+  if(snap.exists()){ settings = snap.data(); categories = settings.categories || []; renderCategories(); }
+});
+
+function renderCategories(){
+  const bar = document.getElementById('categories-bar');
+  if(!categories.length){ bar.innerHTML = ''; return; }
+  bar.innerHTML = `<button onclick="filterByCategory('')" class="chip px-3 py-1.5 rounded-full text-xs whitespace-nowrap" style="color:var(--accent)">সব</button>` +
+    categories.map(c => `<button onclick="filterByCategory('${esc(c)}')" class="chip px-3 py-1.5 rounded-full text-xs whitespace-nowrap">${esc(c)}</button>`).join('');
+}
+
+function filterByCategory(cat){ selectedCategory = cat; renderProducts(); }
+window.filterByCategory = filterByCategory;
+
+function renderProducts(){
+  const grid = document.getElementById('product-grid');
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  let filtered = products.filter(p => (p.title||'').toLowerCase().includes(q));
+  if(selectedCategory) filtered = filtered.filter(p => p.category === selectedCategory);
+  document.getElementById('product-count').innerText = filtered.length + ' টি';
+  if(filtered.length === 0){
+    grid.innerHTML = `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">কোনো প্রোডাক্ট নেই।</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(p => productCard(p)).join('');
+}
+
+function productCard(p){
+  const badgeColor = p.badge === 'HOT' ? '#FF5C6A' : p.badge === 'NEW' ? '#3B82F6' : '#00E5C7';
+  const badgeHtml = p.badge ? `<span class="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded text-white" style="background:${badgeColor}">${esc(p.badge)}</span>` : '';
+  const oldPriceHtml = p.oldPrice ? `<span class="text-[11px] line-through" style="color:var(--muted)">৳${p.oldPrice}</span>` : '';
+  const isWished = wishlist.includes(p.id);
+  return `
+    <div class="card p-3 relative flex flex-col justify-between fade-in">
+      ${badgeHtml}
+      <button onclick='event.stopPropagation();toggleWishlist(${JSON.stringify(p.id)})' class="absolute top-2 right-2 text-base ${isWished?'heart-active':''}" style="color:var(--muted)">${isWished?'❤️':'🤍'}</button>
+      <div>
+        <div class="h-28 rounded-lg overflow-hidden mb-2" style="background:var(--panel-2)">
+          <img src="${esc(p.image||'')}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <h3 class="font-bold text-xs mb-1 leading-snug">${esc(p.title)}</h3>
+        <div class="flex items-center gap-2 mb-3">
+          ${oldPriceHtml}
+          <span class="font-extrabold text-sm" style="color:var(--accent)">৳${p.price}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5">
+        <button onclick='addToCart(${JSON.stringify(p.id)})' class="chip py-1.5 rounded text-[11px] font-bold" style="color:var(--accent)">+কার্ট</button>
+        <button onclick='openProductDetail(${JSON.stringify(p.id)})' class="btn-accent py-1.5 rounded text-[11px]">কিনুন</button>
+      </div>
+    </div>`;
+}
+
+function openProductDetail(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  currentProduct = p;
+  document.getElementById('detail-img').src = p.image || '';
+  document.getElementById('detail-title').innerText = p.title;
+  document.getElementById('detail-price').innerText = '৳' + p.price;
+  document.getElementById('detail-old-price').innerText = p.oldPrice ? '৳' + p.oldPrice : '';
+  document.getElementById('detail-desc').innerText = p.desc || '';
+  document.getElementById('detail-heart').innerText = wishlist.includes(p.id) ? '❤️' : '🤍';
+  go('product-detail');
+}
+window.openProductDetail = openProductDetail;
+
+function loadCart(){
+  if(!currentUser) return;
+  onSnapshot(collection(db, 'carts', currentUser.uid, 'items'), (snap) => {
+    cart = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCart();
+  });
+}
+
+async function addToCart(productId){
+  if(!currentUser){ toast('কার্টে যোগ করতে লগইন করুন'); openAuth('login'); return; }
+  const p = products.find(x => x.id === productId);
+  if(!p) return;
+  await setDoc(doc(db, 'carts', currentUser.uid, 'items', productId), {
+    productId, title: p.title, price: p.price, image: p.image || '', qty: 1
+  });
+  toast('✅ কার্টে যোগ হয়েছে');
+}
+window.addToCart = addToCart;
+
+function addCurrentToCart(){ addToCart(currentProduct.id); go('home'); }
+window.addCurrentToCart = addCurrentToCart;
+
+async function removeFromCart(itemId){
+  if(!currentUser) return;
+  await deleteDoc(doc(db, 'carts', currentUser.uid, 'items', itemId));
+}
+window.removeFromCart = removeFromCart;
+
+function renderCart(){
+  document.getElementById('cart-badge').innerText = cart.length;
+  const box = document.getElementById('cart-items-container');
+  if(cart.length === 0){
+    box.innerHTML = `<p class="text-center mt-10" style="color:var(--muted)">কার্ট খালি</p>`;
+    document.getElementById('cart-total-price').innerText = '৳0';
+    return;
+  }
+  let total = 0;
+  box.innerHTML = cart.map(item => {
+    total += item.price * (item.qty||1);
+    return `<div class="flex justify-between items-center chip p-2.5 rounded">
+      <div><p class="font-bold">${esc(item.title)}</p><p style="color:var(--accent)">৳${item.price}</p></div>
+      <button onclick="removeFromCart('${item.id}')" style="color:var(--danger)">✕</button>
+    </div>`;
+  }).join('');
+  document.getElementById('cart-total-price').innerText = fmt(total);
+}
+
+function openCart(){ document.getElementById('cart-modal').classList.remove('hidden'); document.getElementById('cart-modal').classList.add('flex'); }
+function closeCart(){ document.getElementById('cart-modal').classList.add('hidden'); document.getElementById('cart-modal').classList.remove('flex'); }
+window.openCart = openCart;
+window.closeCart = closeCart;
+
+async function checkoutCart(){
+  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  if(cart.length === 0) return;
+  const total = cart.reduce((s,i)=>s+i.price*(i.qty||1), 0);
+  const bal = userProfile?.balance || 0;
+  if(bal < total){ toast('❌ পর্যাপ্ত ব্যালেন্স নেই'); closeCart(); go('add-balance'); return; }
+  await addDoc(collection(db, 'orders'), {
+    userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
+    items: cart.map(i => ({ productId: i.productId, title: i.title, price: i.price, qty: i.qty||1 })),
+    total, status: 'pending', createdAt: serverTimestamp()
+  });
+  for(const item of cart){
+    await deleteDoc(doc(db, 'carts', currentUser.uid, 'items', item.id));
+  }
+  closeCart();
+  toast('✅ অর্ডার প্লেসড!');
+  go('my-orders');
+}
+window.checkoutCart = checkoutCart;
+
+async function executeBuy(){
+  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  const bal = userProfile?.balance || 0;
+  if(bal < currentProduct.price){ toast('❌ পর্যাপ্ত ব্যালেন্স নেই'); go('add-balance'); return; }
+  await addDoc(collection(db, 'orders'), {
+    userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
+    items: [{ productId: currentProduct.id, title: currentProduct.title, price: currentProduct.price, qty: 1 }],
+    total: currentProduct.price, status: 'pending', createdAt: serverTimestamp()
+  });
+  toast('✅ অর্ডার প্লেসড!');
+  go('my-orders');
+}
+window.executeBuy = executeBuy;
+
+function loadWishlist(){
+  if(!currentUser) return;
+  onSnapshot(collection(db, 'wishlists', currentUser.uid, 'items'), (snap) => {
+    wishlist = snap.docs.map(d => d.id);
+    renderProducts(); renderWishlist();
+  });
+}
+
+async function toggleWishlist(productId){
+  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  const ref = doc(db, 'wishlists', currentUser.uid, 'items', productId);
+  const snap = await getDoc(ref);
+  if(snap.exists()){ await deleteDoc(ref); toast('উইশলিস্ট থেকে সরানো'); }
+  else { await setDoc(ref, { productId, addedAt: serverTimestamp() }); toast('উইশলিস্টে যোগ'); }
+}
+window.toggleWishlist = toggleWishlist;
+
+function toggleWishlistCurrent(){ toggleWishlist(currentProduct.id); }
+window.toggleWishlistCurrent = toggleWishlistCurrent;
+
+function renderWishlist(){
+  const grid = document.getElementById('wishlist-grid');
+  const items = products.filter(p => wishlist.includes(p.id));
+  grid.innerHTML = items.length ? items.map(p => productCard(p)).join('') :
+    `<div class="col-span-2 text-center py-10 text-xs" style="color:var(--muted)">উইশলিস্ট খালি</div>`;
+}
+
+function renderPaymentNumbers(){
+  const box = document.getElementById('payment-numbers-list');
+  if(!paymentNumbers.length){
+    box.innerHTML = `<p class="text-center text-xs py-4" style="color:var(--muted)">এখনো কোনো নাম্বার যোগ করা হয়নি</p>`;
+    return;
+  }
+  const colors = { bKash:'#E2136E', Nagad:'#F7941D', Rocket:'#8C52FF' };
+  box.innerHTML = paymentNumbers.map(n => `
+    <div class="chip p-3 rounded-lg flex justify-between items-center">
+      <div>
+        <p class="font-bold text-xs" style="color:${colors[n.type] || 'var(--accent)'}">${esc(n.type)} ${n.personal ? '(Personal)' : '(Agent)'}</p>
+        <p class="text-sm font-bold">${esc(n.number)}</p>
+        <p class="text-[10px]" style="color:var(--muted)">${esc(n.name || '')}</p>
+      </div>
+      <button onclick="copyText('${esc(n.number)}')" class="chip px-2.5 py-1.5 rounded text-[10px]">COPY</button>
+    </div>`).join('');
+}
+
+function copyText(t){
+  navigator.clipboard?.writeText(t).then(()=>toast('কপি হয়েছে')).catch(()=>toast('কপি ব্যর্থ'));
+}
+window.copyText = copyText;
+
+async function submitPaymentRequest(){
+  if(!currentUser){ toast('লগইন করুন'); openAuth('login'); return; }
+  const amount = parseInt(document.getElementById('topup-amount').value);
+  const trxId = document.getElementById('trx-id').value.trim();
+  const senderNumber = document.getElementById('sender-number').value.trim();
+  if(!amount || amount <= 0){ toast('সঠিক পরিমাণ দিন'); return; }
+  if(!trxId || trxId.length < 4){ toast('সঠিক TrxID দিন'); return; }
+  if(!senderNumber || senderNumber.length < 11){ toast('সঠিক sender নাম্বার দিন'); return; }
+  await addDoc(collection(db, 'paymentRequests'), {
+    userId: currentUser.uid, username: userProfile.username, userEmail: currentUser.email,
+    amount, trxId, senderNumber, status: 'pending', createdAt: serverTimestamp()
+  });
+  document.getElementById('topup-amount').value = '';
+  document.getElementById('trx-id').value = '';
+  document.getElementById('sender-number').value = '';
+  toast('✅ রিকোয়েস্ট পাঠানো হয়েছে');
+  go('my-payments');
+}
+window.submitPaymentRequest = submitPaymentRequest;
+
+function loadMyPayments(){
+  if(!currentUser) return;
+  const q = query(collection(db, 'paymentRequests'), where('userId', '==', currentUser.uid));
+  onSnapshot(q, (snap) => {
+    myPayments = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    renderMyPayments();
+  });
+}
+
+function renderMyPayments(){
+  const box = document.getElementById('my-payments-list');
+  if(!box) return;
+  if(myPayments.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">কোনো পেমেন্ট নেই</p>`; return; }
+  const statusMap = { pending:'⏳ পেন্ডিং', approved:'✅ অ্যাপ্রুভড', rejected:'❌ রিজেক্টেড' };
+  const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
+  box.innerHTML = myPayments.map(p => `
+    <div class="chip p-3 rounded">
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-bold">${fmt(p.amount)}</span>
+        <span class="text-[10px] ${statusClass[p.status]}">${statusMap[p.status]}</span>
+      </div>
+      <p class="text-[10px]" style="color:var(--muted)">TrxID: ${esc(p.trxId)} · From: ${esc(p.senderNumber)}</p>
+    </div>`).join('');
+}
+
+function loadMyOrders(){
+  if(!currentUser) return;
+  const q = query(collection(db, 'orders'), where('userId', '==', currentUser.uid));
+  onSnapshot(q, (snap) => {
+    myOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    renderMyOrders();
+  });
+}
+
+function renderMyOrders(){
+  const box = document.getElementById('orders-list');
+  if(!box) return;
+  if(myOrders.length === 0){ box.innerHTML = `<p class="text-center py-6" style="color:var(--muted)">কোনো অর্ডার নেই</p>`; return; }
+  const statusMap = { pending:'⏳ পেন্ডিং', approved:'✅ সম্পন্ন', rejected:'❌ বাতিল' };
+  const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' };
+  box.innerHTML = myOrders.map(o => `
+    <div class="chip p-3 rounded">
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-bold" style="color:var(--accent)">${fmt(o.total)}</span>
+        <span class="text-[10px] ${statusClass[o.status]}">${statusMap[o.status]}</span>
+      </div>
+      <p class="text-[10px] mb-1">${(o.items||[]).map(i => esc(i.title) + ' × ' + (i.qty||1)).join(', ')}</p>
+      <p class="text-[10px]" style="color:var(--muted)">${o.createdAt ? new Date(o.createdAt.seconds*1000).toLocaleDateString('bn-BD') : ''}</p>
+    </div>`).join('');
+}
+
+function renderProfile(){
+  document.getElementById('profile-name').innerText = userProfile?.username || 'গেস্ট';
+  document.getElementById('profile-email').innerText = currentUser?.email || '';
+  document.getElementById('profile-balance').innerText = userProfile?.balance || 0;
+}
+
+function renderLeaderboard(){
+  const q = query(collection(db, 'orders'), where('status', '==', 'approved'));
+  onSnapshot(q, (snap) => {
+    const orders = snap.docs.map(d => d.data());
+    const totals = {};
+    orders.forEach(o => { totals[o.username] = (totals[o.username]||0) + o.total; });
+    const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const box = document.getElementById('leaderboard-list');
+    box.innerHTML = ranked.length ? ranked.map(([name,total],i) => `
+      <div class="chip p-3 rounded flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-display font-bold text-sm" style="color:${i===0?'var(--amber)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--muted)'}">#${i+1}</span>
+          <span class="font-bold">${esc(name)}</span>
+        </div>
+        <span style="color:var(--accent)">${fmt(total)}</span>
+      </div>`).join('') : `<p class="text-center py-6" style="color:var(--muted)">এখনো কোনো অ্যাপ্রুভড অর্ডার নেই</p>`;
+  });
+}
+
+async function redeemGiftCode(){
+  if(!currentUser){ toast('লগইন করুন'); return; }
+  const code = document.getElementById('giftcode-input').value.trim().toUpperCase();
+  if(!code){ toast('কোড দিন'); return; }
+  const q = query(collection(db, 'giftCodes'), where('code', '==', code));
+  const snap = await getDocs(q);
+  if(snap.empty){ toast('❌ অবৈধ কোড'); return; }
+  const codeDoc = snap.docs[0];
+  const data = codeDoc.data();
+  const usedBy = data.usedBy || [];
+  if(usedBy.includes(currentUser.uid)){ toast('❌ আপনি এই কোড আগেই ব্যবহার করেছেন'); return; }
+  if(data.maxUses && usedBy.length >= data.maxUses){ toast('❌ কোডের limit শেষ'); return; }
+  await updateDoc(doc(db, 'users', currentUser.uid), { balance: increment(data.amount) });
+  await updateDoc(doc(db, 'giftCodes', codeDoc.id), { usedBy: arrayUnion(currentUser.uid) });
+  toast('✅ ' + fmt(data.amount) + ' বোনাস যোগ হয়েছে!');
+  document.getElementById('giftcode-input').value = '';
+}
+window.redeemGiftCode = redeemGiftCode;
+
+async function submitRequest(){
+  if(!currentUser){ toast('লগইন করুন'); return; }
+  const title = document.getElementById('req-title').value.trim();
+  const details = document.getElementById('req-details').value.trim();
+  if(!title){ toast('নাম দিন'); return; }
+  await addDoc(collection(db, 'customRequests'), {
+    userId: currentUser.uid, username: userProfile.username,
+    title, details, status: 'pending', createdAt: serverTimestamp()
+  });
+  document.getElementById('req-title').value = '';
+  document.getElementById('req-details').value = '';
+  toast('✅ রিকোয়েস্ট পাঠানো হয়েছে');
+}
+window.submitRequest = submitRequest;
+
+document.addEventListener('DOMContentLoaded', () => { go('home'); });
